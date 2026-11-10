@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>القرآن الكريم</title>
+<meta name="theme-color" content="#0f3d3e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=IBM+Plex+Sans+Arabic:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f2f5f1;--card:#fff;--ink:#14201f;--mute:#5d6f6c;--line:#d9e2dd;--main:#0f3d3e;--gold:#b8913a;--on:#fff}
+@media(prefers-color-scheme:dark){:root{--bg:#0d1514;--card:#142120;--ink:#e8efec;--mute:#8da39f;--line:#233634;--main:#4fb3a9;--gold:#d9b25c;--on:#0d1514}}
+*{box-sizing:border-box;margin:0}
+body{font-family:'IBM Plex Sans Arabic',system-ui,sans-serif;background:var(--bg);color:var(--ink);padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+header{position:sticky;top:0;z-index:5;background:var(--main);color:var(--on);display:flex;align-items:center;gap:12px;padding:12px 16px}
+header h1{font-size:18px;flex:1}
+button{font:inherit;cursor:pointer;border:0;border-radius:8px;padding:8px 12px;background:var(--card);color:var(--ink)}
+button:focus-visible,input:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+main{max-width:720px;margin:0 auto;padding:16px}
+input[type=search]{width:100%;font:inherit;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink);margin-bottom:12px}
+.resume{display:block;background:var(--main);color:var(--on);padding:14px;border-radius:10px;margin-bottom:12px;text-decoration:none}
+.s{display:flex;align-items:center;gap:12px;padding:12px 4px;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+.n{min-width:36px;height:36px;border:1px solid var(--gold);transform:rotate(45deg);border-radius:6px;display:grid;place-items:center;font-size:13px}
+.n b{transform:rotate(-45deg);font-weight:400}
+.s .ar{font-family:'Amiri Quran',serif;font-size:22px;margin-inline-start:auto}
+.s small{color:var(--mute)}
+.bsm,.ayahs{font-family:'Amiri Quran',serif;line-height:2.3;text-align:justify}
+.bsm{text-align:center;font-size:28px;color:var(--gold);margin:12px 0}
+.ayah{cursor:pointer;border-radius:6px}
+.ayah.bm{background:color-mix(in srgb,var(--gold) 25%,transparent)}
+.mk{color:var(--gold);font-size:.7em;margin:0 4px}
+.tr{display:block;font-family:'IBM Plex Sans Arabic',sans-serif;direction:ltr;text-align:left;font-size:15px;line-height:1.6;color:var(--mute);margin:0 0 8px}
+.bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
+.bar button{border:1px solid var(--line)}
+audio{width:100%;margin-bottom:12px}
+.msg{padding:24px;text-align:center;color:var(--mute)}
+</style>
+</head>
+<body>
+<header><button id="back" hidden aria-label="رجوع">→</button><h1 id="title">القرآن الكريم</h1></header>
+<main id="app"></main>
+<script>
+const API='https://api.alquran.cloud/v1',app=document.getElementById('app');
+let st={size:30,tr:false,bm:[],last:null},surahs=[];
+try{st={...st,...JSON.parse(localStorage.getItem('q')||'{}')}}catch(e){}
+const save=()=>{try{localStorage.setItem('q',JSON.stringify(st))}catch(e){}};
+const get=async p=>{const r=await fetch(API+p);if(!r.ok)throw Error();return(await r.json()).data};
+const esc=s=>s.replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const title=document.getElementById('title'),back=document.getElementById('back');
+back.onclick=()=>location.hash='#/';
+
+async function home(){
+  title.textContent='القرآن الكريم';back.hidden=true;
+  app.innerHTML='<p class="msg">جارٍ التحميل…</p>';
+  try{surahs=surahs.length?surahs:await get('/surah')}catch(e){app.innerHTML='<p class="msg">تعذر التحميل. تأكد من الاتصال بالإنترنت.</p>';return}
+  const l=st.last&&surahs[st.last-1];
+  app.innerHTML=(l?`<a class="resume" href="#/s/${l.number}">تابع القراءة: ${l.name}</a>`:'')+
+   '<input type="search" id="q" placeholder="ابحث عن سورة بالاسم أو الرقم" aria-label="بحث">'+
+   '<div id="list"></div>';
+  const draw=f=>document.getElementById('list').innerHTML=surahs.filter(s=>!f||s.name.includes(f)||s.englishName.toLowerCase().includes(f.toLowerCase())||String(s.number)===f)
+   .map(s=>`<a class="s" href="#/s/${s.number}"><span class="n"><b>${s.number}</b></span><span>${s.englishName}<br><small>${s.numberOfAyahs} آية · ${s.revelationType==='Meccan'?'مكية':'مدنية'}</small></span><span class="ar">${s.name.replace('سورة ','')}</span></a>`).join('')||'<p class="msg">لا توجد نتائج</p>';
+  draw('');document.getElementById('q').oninput=e=>draw(e.target.value.trim());
+}
+
+async function reader(n){
+  back.hidden=false;app.innerHTML='<p class="msg">جارٍ التحميل…</p>';
+  let d;try{d=await get(`/surah/${n}/editions/quran-uthmani,en.sahih`)}catch(e){app.innerHTML='<p class="msg">تعذر تحميل السورة. افتحها مرة وأنت متصل لتعمل بدون إنترنت بعدها.</p>';return}
+  const[ar,en]=d;title.textContent=ar.name;st.last=n;save();
+  const first=ar.ayahs[0].text,bs=(n!=1&&n!=9)?first.split(' ').slice(0,4).join(' '):'';
+  const txt=ar.ayahs.map((a,i)=>(i==0&&bs)?first.split(' ').slice(4).join(' '):a.text);
+  const id=n.toString().padStart(1,'0');
+  app.innerHTML=`<audio controls preload="none" src="https://cdn.islamic.network/quran/audio-surah/128/ar.alafasy/${n}.mp3"></audio>
+  <div class="bar"><button id="plus" aria-label="تكبير الخط">أ+</button><button id="minus" aria-label="تصغير الخط">أ−</button><button id="tr" aria-pressed="${st.tr}">الترجمة</button>
+  ${n>1?`<button onclick="location.hash='#/s/${n-1}'">السابقة</button>`:''}${n<114?`<button onclick="location.hash='#/s/${n+1}'">التالية</button>`:''}</div>
+  ${bs?`<div class="bsm">${bs}</div>`:''}<div class="ayahs" id="ay" style="font-size:${st.size}px"></div>`;
+  const ay=document.getElementById('ay');
+  const draw=()=>{ay.innerHTML=ar.ayahs.map((a,i)=>{const k=n+':'+a.numberInSurah;
+    return`<span class="ayah${st.bm.includes(k)?' bm':''}" data-k="${k}">${txt[i]}<span class="mk">﴿${a.numberInSurah.toLocaleString('ar-EG')}﴾</span></span>`+(st.tr?`<span class="tr">${esc(en.ayahs[i].text)}</span>`:' ')}).join('')};
+  draw();
+  ay.onclick=e=>{const el=e.target.closest('.ayah');if(!el)return;const k=el.dataset.k,i=st.bm.indexOf(k);i<0?st.bm.push(k):st.bm.splice(i,1);save();el.classList.toggle('bm')};
+  document.getElementById('plus').onclick=()=>{st.size=Math.min(60,st.size+4);ay.style.fontSize=st.size+'px';save()};
+  document.getElementById('minus').onclick=()=>{st.size=Math.max(20,st.size-4);ay.style.fontSize=st.size+'px';save()};
+  document.getElementById('tr').onclick=e=>{st.tr=!st.tr;e.target.setAttribute('aria-pressed',st.tr);save();draw()};
+  scrollTo(0,0);
+}
+function route(){const m=location.hash.match(/^#\/s\/(\d+)$/);m&&+m[1]>=1&&+m[1]<=114?reader(+m[1]):home()}
+addEventListener('hashchange',route);route();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('sw.js');
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Quran text: Tanzil Project (https://tanzil.net) - Uthmani text.
+Copyright (C) 2007-2021 Tanzil Project. License: Creative Commons Attribution 3.0.
+Permission is granted to copy and distribute verbatim copies of this text, but changing it is not allowed.
+The text may be used in any website or application provided the source (Tanzil Project) is clearly indicated and a link to tanzil.net is made.
+Note: ayah text is stored verbatim in quran.json; the app only splits the opening basmala visually when displaying.
